@@ -1,6 +1,7 @@
 import os
 import time
 import sys
+
 sys.path.append(os.path.dirname(os.getcwd()))
 import tensorflow as tf
 from bert import modeling
@@ -10,17 +11,15 @@ from core.metrics import mean, get_multi_metrics
 
 
 class Trainer(object):
-    def __init__(self, config:dict):
+    def __init__(self, config: dict):
         self.config = config
         self.__bert_checkpoint_path = os.path.join(self.config["bert_model_path"], "bert_model.ckpt")
 
         # 加载数据集
         self.data_obj = self.load_data()
-        self.t_in_ids, self.t_in_masks, self.t_seg_ids, self.t_lab_ids, lab_to_idx = self.data_obj.gen_data(
-            self.config["train_data"])
+        self.t_in_ids, self.t_in_masks, self.t_seg_ids, self.t_lab_ids, lab_to_idx = self.data_obj.gen_data(self.config["train_data"])
 
-        self.e_in_ids, self.e_in_masks, self.e_seg_ids, self.e_lab_ids, lab_to_idx = self.data_obj.gen_data(
-            self.config["eval_data"], is_training=False)
+        self.e_in_ids, self.e_in_masks, self.e_seg_ids, self.e_lab_ids, lab_to_idx = self.data_obj.gen_data(self.config["eval_data"], is_training=False)
         print("train data size: {}".format(len(self.t_lab_ids)))
         print("eval data size: {}".format(len(self.e_lab_ids)))
         self.label_list = [value for key, value in lab_to_idx.items()]
@@ -31,6 +30,14 @@ class Trainer(object):
         num_warmup_steps = int(num_train_steps * self.config["warmup_rate"])
         # 初始化模型对象
         self.model = self.create_model(num_train_steps, num_warmup_steps)
+
+    @property
+    def model_save_path(self):
+        save_path = self.config["ckpt_model_path"]
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        model_save_path = os.path.join(save_path, self.config["model_name"])
+        return model_save_path
 
     def load_data(self):
         """
@@ -73,8 +80,9 @@ class Trainer(object):
                         current_step, loss, acc, recall, prec, f_beta))
 
                     current_step += 1
-                    if self.data_obj and current_step % self.config["checkpoint_every"] == 0:
 
+                    # 验证模型和保存模型
+                    if self.data_obj and current_step % self.config["checkpoint_every"] == 0:
                         eval_losses = []
                         eval_accs = []
                         eval_aucs = []
@@ -100,19 +108,16 @@ class Trainer(object):
                             mean(eval_precs), mean(eval_f_betas)))
                         print("\n")
 
-                        if self.config["ckpt_model_path"]:
-                            print("save check point.")
-                            save_path = self.config["ckpt_model_path"]
-                            if not os.path.exists(save_path):
-                                os.makedirs(save_path)
-                            model_save_path = os.path.join(save_path, self.config["model_name"])
-                            self.model.saver.save(sess, model_save_path, global_step=current_step)
-                        else:
-                            print("no ckpt_model_path")
+                        print("save check point.")
+                        self.model.saver.save(sess, self.model_save_path, global_step=current_step)
 
             end = time.time()
             print("total train time: ", end - start)
+            # 训练完成保存模型
+            print("save check point.")
+            self.model.saver.save(sess, self.model_save_path, global_step=current_step)
 
-def run_trainer(config:dict):
+
+def run_trainer(config: dict):
     trainer = Trainer(config)
     trainer.train()

@@ -1,10 +1,12 @@
 import json
 import os
 import sys
+
 sys.path.append(os.path.abspath(os.path.dirname(os.getcwd())))
 
 import tensorflow as tf
 from bert import tokenization
+from core.model import BertClassifier
 
 
 class Predictor(object):
@@ -27,7 +29,7 @@ class Predictor(object):
     def load_vocab(self):
         # 将词汇-索引映射表加载出来
 
-        with open(os.path.join(self.output_path, "label_to_index.json"), "r") as f:
+        with open(os.path.join(self.output_path, "label_to_index.json"), "r", encoding='utf-8') as f:
             label_to_index = json.load(f)
 
         return label_to_index
@@ -70,6 +72,12 @@ class Predictor(object):
 
         return [input_id], [input_mask], [segment_id]
 
+    def tokenize(self, text):
+        tokenizer = tokenization.FullTokenizer(vocab_file=self.vocab_path, do_lower_case=True)
+        text = tokenization.convert_to_unicode(text)
+        tokens = tokenizer.tokenize(text)
+        return tokens
+
     def load_graph(self):
         """
         加载计算图
@@ -85,9 +93,9 @@ class Predictor(object):
 
     def create_model(self):
         """
-                根据config文件选择对应的模型，并初始化
-                :return:
-                """
+        根据config文件选择对应的模型，并初始化
+        :return:
+        """
         self.model = BertClassifier(config=self.config, is_training=False)
 
     def predict(self, text):
@@ -102,5 +110,6 @@ class Predictor(object):
                                       dict(input_ids=input_ids,
                                            input_masks=input_masks,
                                            segment_ids=segment_ids)).tolist()[0]
+
         label = self.index_to_label[prediction]
         return label

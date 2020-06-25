@@ -1,10 +1,41 @@
 # bert-chinese-classifier
 
-预训练模型：
+本项目包含大约20000条新闻的训练和测试集。
 
-https://storage.googleapis.com/bert_models/2018_11_03/chinese_L-12_H-768_A-12.zip
+训练生成fine-tuning模型后即可运行`test.py`进行单句分类测试，也可以运行`server.py`启动flask服务器测试。
 
-## config文件
+预训练模型：https://storage.googleapis.com/bert_models/2018_11_03/chinese_L-12_H-768_A-12.zip
+
+
+## JupyterNotebook使用
+
+找到`前面的全部一梭子运行`这一个cell，运行前面的全部cell。
+
+然后下面的cell依次运行即可。
+
+
+## 开始训练
+
+```bash
+python train.py
+```
+
+## 测试
+
+```bash
+python test.py
+```
+
+## 测试服务器
+
+```bash
+python server.py
+```
+
+请求方式为：`http://127.0.0.1:8000?text=现在值得购买的中端手机，都有着出色的配置，性能强劲`
+
+
+## config文件配置
 
 * model_name：模型名称
 * epochs：迭代epoch的数量

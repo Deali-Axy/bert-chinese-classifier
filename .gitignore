@@ -1,5 +1,6 @@
 .idea/
 bert/
+bert_model/
 ckpt_model/
 
 # Created by .ignore support plugin (hsz.mobi)
